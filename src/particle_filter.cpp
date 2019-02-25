@@ -44,7 +44,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 
   // Generate particles
   for (int i = 0; i < num_particles; i++){
-    particle particle;
+    Particle particle;
     particle.id    = i;
     particle.x     = dist_x(gen);
     particle.y     = dist_y(gen);
@@ -74,22 +74,22 @@ void ParticleFilter::prediction(double delta_t, double std_pos[],
   normal_distribution<float> dist_theta (0, std_pos[2]);
 
   for (int i = 0; i < num_particles; i++){
+    // when yaw rate is very small (closed to 0)
     if(fabs(yaw_rate) < 0.00001){
       particles[i].x += velocity * delta_t * cos(particles[i].theta);
       particles[i].y += velocity * delta_t * sin(particles[i].theta);
     }
+    // when yaw rate is != 0
     else{
       particles[i].x += velocity / yaw_rate * (sin(particles[i].theta + (yaw_rate *  delta_t)) - sin(particles[i].theta));
       particles[i].y += velocity / yaw_rate * (cos(particles[i].theta) - cos(particles[i].theta + yaw_rate * delta_t));
       particles[i].theta += yaw_rate * delta_t;
     }
     // add noise
-    particles.x += dist_x(gen);
-    particles.y += dist_y(gen);
-    particles.theta += dist_theta(gen);
+    particles[i].x += dist_x(gen);
+    particles[i].y += dist_y(gen);
+    particles[i].theta += dist_theta(gen);
   }
-
-
 
 }
 
@@ -103,7 +103,30 @@ void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted,
    *   probably find it useful to implement this method and use it as a helper 
    *   during the updateWeights phase.
    */
+  unsigned int nObservations = observations.size();
+  unsigned int nPredicted = predicted.size();
+  for (unsigned int i = 0; i < nObservations; i++){
 
+    // initializ big number for minimum distance
+    double minDistance = numeric_limits<double>::max();
+
+    // initialize map ID
+    int mapID = -1;
+
+    for (unsigned int j = 0; j < nPredicted; j++){
+      // calculation
+      double xDistance = observations[i].x - predicted[j].x;
+      double yDistance = observations[i].y - predicted[j].y;
+      double dist      = pow(xDistance,2) + pow(yDistance,2);
+
+      // if distance is less than minimum distance, update minimum distance
+      if (dist < minDistance){
+        minDistance = dist;
+        mapID = predicted[j].id;
+      }
+    }
+    observations[i].id = mapID;
+  }
 }
 
 void ParticleFilter::updateWeights(double sensor_range, double std_landmark[], 

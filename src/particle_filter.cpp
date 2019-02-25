@@ -152,20 +152,62 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
     double particle_x     = particles[i].x;
     double particle_y     = particles[i].y;
     double particle_theta = particles[i].theta;
-    //step 1: transform observations coordiantes to map coordinates
+ 
+    vector<LandmarkObs> predictions;
+
+    for (unsigned int j = 0; j<map_landmarks.landmark_list.size(); j++){
+      //get id and x,y coordinates
+      float lm_x = map_landmarks.landmark_list[j].x_f;
+      float lm_y = map_landmarks.landmark_list[j].y_f;
+      int   lm_id= map_landmarks.landmark_list[j].id_i;
+    
+      if(fabs(lm_x - particle_x) <= sensor_range && fabs(lm_y - particle_y) <= sensor_range){
+        predictions.push_back(LandmarkObs{lm_id,lm_x,lm_y});
+      }
+    }
+    // transform car observation coordinates to map coordinates
     vector<LandmarkObs> transformed_observations;
 
-    //apply formula to find map coordinates 
-    for (int j = 0; j < observations.size(); j++){
+    for (unsigned int j = 0; j < observations.size(); j++){
       LandmarkObs transformed;
       transformed.id = j;
       transformed.x  = particle_x + (cos(particle_theta) * observations[j].x)-(sin(particle_theta) * observations[j].y);
       transformed.y  = particle_y + (sin(particle_theta) * observations[j].x)+(cos(particle_theta) * observations[j].y);
       transformed_observations.push_back(transformed);
     }
+  
+    //Data association for the predictions and transformed observations on current particle
+    dataAssociation(predicted, transformed_observations);
+    particles[i].weight = 1.0;
+
+    // Multivariate_Gaussian
+    double sigma_x = std_landmark[0];
+    double sigma_y = std_landmark[1];
+    double sigma_x_2 = pow(sigma_x,2);
+    double sigma_y_2 = pow(sigma_y,2);
+    double normalizer = (1.0/(2.0 * M_PI*sigma_x*sigma_y));
+
+
+    for (unsigned int j = 0; j < transformed_observations.size(); j++){
+      double trans_obs_x = transformed_observations[j].x;
+      double trans_obs_y = transformed_observations[j].y;
+      int trans_obs_id = transformed_observations[j].id;
+
+      for (unsigned int k = 0; k < predictions.size(); k++){
+        double pred_x = predictions[k].x;
+        double pred_y = predictions[k].y;
+        int pred_id = predictions[k].id;
+
+        if (pre_id ==trans_obs_id){
+          observations_weight = normalizer * exp(-1.0 * ((pow((trans_obs_x - pred_x), 2)/(2.0 * sigma_x_2)) + (pow((trans_obs_y - pred_y), 2)/(2.0 * sigma_y_2))));
+        }
+
+      }
+
+
+    }
 
   }
-
 }
 
 void ParticleFilter::resample() {

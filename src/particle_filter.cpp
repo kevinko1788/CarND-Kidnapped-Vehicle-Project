@@ -114,14 +114,15 @@ void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted,
     int mapID = -1;
 
     for (unsigned int j = 0; j < nPredicted; j++){
-      // calculation
-      double xDistance = observations[i].x - predicted[j].x;
-      double yDistance = observations[i].y - predicted[j].y;
-      double dist      = pow(xDistance,2) + pow(yDistance,2);
+      // calculation or 
+      double current_dist = dist(observations[i].x ,observations[i].y, predicted[i].x, predicted[j].y);
+      // double xDistance    = observations[i].x - predicted[j].x;
+      // double yDistance    = observations[i].y - predicted[j].y;
+      // double current_dist = pow(xDistance,2) + pow(yDistance,2);
 
       // if distance is less than minimum distance, update minimum distance
-      if (dist < minDistance){
-        minDistance = dist;
+      if (current_dist < minDistance){
+        minDistance = current_dist;
         mapID = predicted[j].id;
       }
     }
@@ -145,6 +146,25 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
    *   and the following is a good resource for the actual equation to implement
    *   (look at equation 3.33) http://planning.cs.uiuc.edu/node99.html
    */
+
+  
+  for (int i = 0; i < num_particles; i++){
+    double particle_x     = particles[i].x;
+    double particle_y     = particles[i].y;
+    double particle_theta = particles[i].theta;
+    //step 1: transform observations coordiantes to map coordinates
+    vector<LandmarkObs> transformed_observations;
+
+    //apply formula to find map coordinates 
+    for (int j = 0; j < observations.size(); j++){
+      LandmarkObs transformed;
+      transformed.id = j;
+      transformed.x  = particle_x + (cos(particle_theta) * observations[j].x)-(sin(particle_theta) * observations[j].y);
+      transformed.y  = particle_y + (sin(particle_theta) * observations[j].x)+(cos(particle_theta) * observations[j].y);
+      transformed_observations.push_back(transformed);
+    }
+
+  }
 
 }
 

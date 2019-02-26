@@ -177,7 +177,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
     }
   
     //Data association for the predictions and transformed observations on current particle
-    dataAssociation(predicted, transformed_observations);
+    dataAssociation(predictions, transformed_observations);
     particles[i].weight = 1.0;
 
     // Multivariate_Gaussian
@@ -198,15 +198,12 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
         double pred_y = predictions[k].y;
         int pred_id = predictions[k].id;
 
-        if (pre_id ==trans_obs_id){
-          observations_weight = normalizer * exp(-1.0 * ((pow((trans_obs_x - pred_x), 2)/(2.0 * sigma_x_2)) + (pow((trans_obs_y - pred_y), 2)/(2.0 * sigma_y_2))));
+        if (pred_id ==trans_obs_id){
+          double observations_weight = normalizer * exp(-1.0 * ((pow((trans_obs_x - pred_x), 2)/(2.0 * sigma_x_2)) + (pow((trans_obs_y - pred_y), 2)/(2.0 * sigma_y_2))));
+          particles[i].weight += observations_weight;
         }
-
       }
-
-
     }
-
   }
 }
 

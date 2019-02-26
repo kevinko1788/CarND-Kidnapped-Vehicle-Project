@@ -105,6 +105,7 @@ void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted,
    */
   unsigned int nObservations = observations.size();
   unsigned int nPredicted = predicted.size();
+
   for (unsigned int i = 0; i < nObservations; i++){
 
     // initializ big number for minimum distance
@@ -120,7 +121,7 @@ void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted,
       // double yDistance    = observations[i].y - predicted[j].y;
       // double current_dist = pow(xDistance,2) + pow(yDistance,2);
 
-      // if distance is less than minimum distance, update minimum distance
+
       if (current_dist < minDistance){
         minDistance = current_dist;
         mapID = predicted[j].id;
@@ -220,8 +221,8 @@ void ParticleFilter::resample() {
     weights.push_back(particles[i].weight);
   }
 
-  // get max value * 2
-  double maxWeight = *max_element(weights.begin(), weights.end()) * 2;
+  // get max value
+  double maxWeight = *max_element(weights.begin(), weights.end());
 
   // initiate beta
   double beta = 0.0;
@@ -230,17 +231,18 @@ void ParticleFilter::resample() {
   uniform_real_distribution<double> distDouble(0.0, maxWeight);
   uniform_int_distribution<int> distInt(0, num_particles - 1);
 
-  // pick random index
+  // Generate index
   int index = distInt(gen);
 
   // Resample wheel
   vector<Particle> resampled_particles;
   for(int i=0; i < num_particles; i++){
-    beta += distDouble(gen);
+    beta += distDouble(gen)*2.0;
     while(beta > weights[index]){
       beta -= weights[index];
       index = (index+1)%num_particles;
     }
+    resampled_particles.push_back(particles[index]);
   }
   particles = resampled_particles;
 
